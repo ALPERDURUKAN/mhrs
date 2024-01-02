@@ -1,9 +1,9 @@
-const moment = require("moment");
+import moment from "moment";
 const prompt = require("prompt-sync")({ sigint: true });
-const functions = require("./functions.js");
+import { kullaniciRandevulari, randevuAra, hekimAra, randevuAl, girisYap } from "./functions.js";
 
-const klinikler = require("./klinikler.json").klinikler;
-const iller = require("./iller.json").iller;
+import { klinikler } from "./klinikler.json";
+import { iller } from "./iller.json";
 
 const tckimlik = prompt("TC kimlik numarası: ");
 const sifre = prompt("Şifre: ");
@@ -19,11 +19,10 @@ function kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi) {
       return;
    }
 
-   functions.kullaniciRandevulari(token).then(randevular => {
+   kullaniciRandevulari(token).then(randevular => {
       if (randevular.aktifRandevuDtoList.filter(a => a.mhrsKlinikAdi == klinik.text).length <= 0) {
-         const date = moment().format('YYYY-MM-DD HH:mm:ss')
-         functions.randevuAra(token, il.plaka, cinsiyet, klinik.value, String(baslangicTarihi), String(bitisTarihi).format('YYYY-MM-DD HH:mm:ss')).then(veri => {
-            functions.hekimAra(token, il.plaka, cinsiyet, klinik.value, veri.kurumId, veri.hekimId).then(veri => {
+         randevuAra(token, il.plaka, cinsiyet, klinik.value, String(baslangicTarihi).format('YYYY-MM-DD HH:mm:ss'), String(bitisTarihi).format('YYYY-MM-DD HH:mm:ss')).then(veri => {
+            hekimAra(token, il.plaka, cinsiyet, klinik.value, veri.kurumId, veri.hekimId).then(veri => {
                const kullanilabilirhekim = veri.filter(hekim => hekim.kalanKullanim > 0)
                if (kullanilabilirhekim.length > 0) {
                   const saatler = kullanilabilirhekim[0].hekimSlotList[0].muayeneYeriSlotList[0].saatSlotList.filter(saat => saat.bos == true)
@@ -34,7 +33,7 @@ function kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi) {
 
                   const alinabilir = slotList.filter(a => a.bos == true)
 
-                  functions.randevuAl(token, alinabilir[0].slot.id, alinabilir[0].slot.fkCetvelId, alinabilir[0].slot.baslangicZamani, alinabilir[0].slot.bitisZamani)
+                  randevuAl(token, alinabilir[0].slot.id, alinabilir[0].slot.fkCetvelId, alinabilir[0].slot.baslangicZamani, alinabilir[0].slot.bitisZamani)
                      .then(resp => {
                         console.log(`Randevu alındı\nHekim adı: ${resp.hekim.ad} ${resp.hekim.soyad}\nKurum adı: ${resp.kurum.kurumAdi} (${resp.kurum.ilAdi}-${resp.kurum.ilceAdi})\nRandevu tarihi: ${resp.randevuBaslangicZamaniStr.zaman} - ${resp.randevuBitisZamaniStr.saat}`)
                         clearInterval(interval)
@@ -52,7 +51,7 @@ function kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi) {
    }).catch(() => console.error("Randevu geçmişi alınırken hata oluştu"))
 }
 
-functions.girisYap(tckimlik, sifre).then(rawtoken => {
+girisYap(tckimlik, sifre).then(rawtoken => {
    console.log("Giriş başarılı")
 
    const ilprompt = prompt("Randevu istediğiniz ilin adı veya plakası: ")
