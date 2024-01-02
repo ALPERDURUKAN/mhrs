@@ -22,7 +22,7 @@ function kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi) {
    functions.kullaniciRandevulari(token).then(randevular => {
       if (randevular.aktifRandevuDtoList.filter(a => a.mhrsKlinikAdi == klinik.text).length <= 0) {
          const date = moment().format('YYYY-MM-DD HH:mm:ss')
-         functions.randevuAra(token, il.plaka, cinsiyet, klinik.value, String(baslangicTarihi), String(bitisTarihi).format('YYYY-MM-DD HH:mm:ss'))).then(veri => {
+         functions.randevuAra(token, il.plaka, cinsiyet, klinik.value, String(baslangicTarihi), String(bitisTarihi).format('YYYY-MM-DD HH:mm:ss')).then(veri => {
             functions.hekimAra(token, il.plaka, cinsiyet, klinik.value, veri.kurumId, veri.hekimId).then(veri => {
                const kullanilabilirhekim = veri.filter(hekim => hekim.kalanKullanim > 0)
                if (kullanilabilirhekim.length > 0) {
@@ -45,11 +45,11 @@ function kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi) {
             if (err.response.data.errors[0].kodu == "RND4010") console.log("Randevu bulunamadı")
             else console.error("Randevu bulunurken hata oluştu")
          })
-} else {
-   console.log("Zaten randevu alınmış")
-   clearInterval(interval)
-}
-      }).catch (() => console.error("Randevu geçmişi alınırken hata oluştu"))
+      } else {
+         console.log("Zaten randevu alınmış")
+         clearInterval(interval)
+      }
+   }).catch(() => console.error("Randevu geçmişi alınırken hata oluştu"))
 }
 
 functions.girisYap(tckimlik, sifre).then(rawtoken => {
