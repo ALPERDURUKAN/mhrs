@@ -1,18 +1,25 @@
 const moment = require("moment");
-moment.locale("tr")
-const prompt = require("prompt-sync")({ sigint: true });
-const functions = require("./functions.js");
+const prompt = require("prompt-sync")({sigint: true});
+const functions = require("./functions.js"); 
 
-const klinikler = require("./klinikler.json").klinikler
-const iller = require("./iller.json").iller
+const klinikler = require("./klinikler.json").klinikler;
+const iller = require("./iller.json").iller;
 
-const tckimlik = prompt("TC kimlik numarası: ")
-const sifre = prompt("Şifre: ")
+const tckimlik = prompt("TC kimlik numarası: ");
+const sifre = prompt("Şifre: ");
 
 let interval;
 
-function kontrolEt(token, il, cinsiyet, klinik, onumuzdekigun) {
-   functions.kullaniciRandevulari(token).then(randevular => {
+function kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi) {
+
+  const dateDiff = moment(bitisTarihi).diff(moment(baslangicTarihi), 'days');
+
+  if(dateDiff > 15) {
+    console.log("Maksimum 15 gün aralık belirtebilirsiniz");
+    return;
+  }
+
+  functions.kullaniciRandevulari(token).then(randevular => {
          if (randevular.aktifRandevuDtoList.filter(a => a.mhrsKlinikAdi == klinik.text).length <= 0) {
             const date = moment().format('YYYY-MM-DD HH:mm:ss')
             functions.randevuAra(token, il.plaka, cinsiyet, klinik.value, String(date), String(moment().add(Number(onumuzdekigun), 'days').format('YYYY-MM-DD HH:mm:ss'))).then(veri => {
@@ -60,13 +67,15 @@ functions.girisYap(tckimlik, sifre).then(rawtoken => {
    console.log(`Seçilen klinik: ${klinik.value} ID'li ${klinik.text}`)
    const cinsiyet = prompt("İstediğiniz cinsiyet (E/K/F): ").toUpperCase()
    if (cinsiyet != "E" && cinsiyet != "K" && cinsiyet != "F") return console.log("Geçersiz cinsiyet")
-   const onumuzdekigun = prompt("Önümüzdeki kaç gün için randevu alınsın? (1-15): ")
-   if (isNaN(Number(onumuzdekigun)) || onumuzdekigun < 1 || onumuzdekigun > 15) return console.log("Geçersiz gün sayısı")
+  const baslangicTarihi = prompt("Başlangıç tarihi (YYYY-MM-DD): ");
+  const bitisTarihi = prompt("Bitiş tarihi (YYYY-MM-DD): ");
 
    const token = String("Bearer " + rawtoken.split('"')[1])
-   console.log("Başladı, her 3 dakikada bir randevular kontrol edilecek")
-   kontrolEt(token, il, cinsiyet, klinik, onumuzdekigun)
-   interval = setInterval(() => {
-      kontrolEt(token, il, cinsiyet, klinik, onumuzdekigun)
-   }, 180000)
-}).catch(() => console.error("Giriş başarısız"))
+   console.log("Başladı, her 5 dakikada bir randevular kontrol edilecek")
+   kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi);
+  
+  interval = setInterval(() => {
+    kontrolEt(token, il, cinsiyet, klinik, baslangicTarihi, bitisTarihi);
+  }, 300000);
+  
+}).catch(() => console.error("Giriş başarısız"));
